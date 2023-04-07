@@ -109,11 +109,22 @@ func main() {
 	var wg sync.WaitGroup
 	switch cfg.LNBackendType {
 	case LNDBackendType:
-		lndClient, err := svc.InitSelfHostedService(ctx, e)
+		lndClient, err := svc.InitSelfHostedLNDService(ctx, e)
 		if err != nil {
 			svc.Logger.Fatal(err)
 		}
 		svc.lnClient = &LNDWrapper{lndClient}
+
+	case LNBitsBackendType:
+		lnbitsClient, err := svc.InitSelfHostedLNBITSService(ctx, e)
+		if err != nil {
+			svc.Logger.Fatal(err)
+		}
+		var options = LNBitsOptions{
+			AdminKey: cfg.LNBitsAdminKey,
+			Host:     cfg.LNBitsHost,
+		}
+		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
 	case AlbyBackendType:
 		oauthService, err := NewAlbyOauthService(svc, e)
 		if err != nil {

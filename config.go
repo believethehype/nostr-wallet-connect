@@ -1,8 +1,9 @@
 package main
 
 const (
-	AlbyBackendType = "ALBY"
-	LNDBackendType  = "LND"
+	AlbyBackendType   = "ALBY"
+	LNDBackendType    = "LND"
+	LNBitsBackendType = "LNBITS"
 )
 
 type Config struct {
@@ -14,6 +15,8 @@ type Config struct {
 	LNDAddress       string `envconfig:"LND_ADDRESS"`
 	LNDCertFile      string `envconfig:"LND_CERT_FILE"`
 	LNDMacaroonFile  string `envconfig:"LND_MACAROON_FILE"`
+	LNBitsHost       string `envconfig:"LNBITS_HOST"`
+	LNBitsAdminKey   string `envconfig:"LNBITS_ADMIN_KEY"`
 	AlbyAPIURL       string `envconfig:"ALBY_API_URL" default:"https://api.getalby.com"`
 	AlbyClientId     string `envconfig:"ALBY_CLIENT_ID"`
 	AlbyClientSecret string `envconfig:"ALBY_CLIENT_SECRET"`

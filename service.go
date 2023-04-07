@@ -24,7 +24,7 @@ type Service struct {
 }
 
 func (svc *Service) GetUserID(c echo.Context) interface{} {
-	if svc.cfg.LNBackendType == LNDBackendType {
+	if svc.cfg.LNBackendType != AlbyBackendType {
 		//if we self-host, there is always only one user
 		return 1
 	}
@@ -197,7 +197,7 @@ func (svc *Service) createResponse(kind int, initialEvent *nostr.Event, content 
 	return resp, nil
 }
 
-func (svc *Service) InitSelfHostedService(ctx context.Context, e *echo.Echo) (result *lnd.LNDWrapper, err error) {
+func (svc *Service) InitSelfHostedLNDService(ctx context.Context, e *echo.Echo) (result *lnd.LNDWrapper, err error) {
 	lndClient, err := lnd.NewLNDclient(lnd.LNDoptions{
 		Address:      svc.cfg.LNDAddress,
 		CertFile:     svc.cfg.LNDCertFile,
@@ -225,4 +225,29 @@ func (svc *Service) InitSelfHostedService(ctx context.Context, e *echo.Echo) (re
 	e.GET("/", svc.AppsListHandler)
 	svc.Logger.Infof("Connected to LND - alias %s", info.Alias)
 	return lndClient, nil
+}
+
+func (svc *Service) InitSelfHostedLNBITSService(ctx context.Context, e *echo.Echo) (result *LNClient, err error) {
+	lnbitsClient, err := NewLNBitslient()
+	if err != nil {
+		return nil, err
+	}
+
+	//add default user to db
+	user := &User{}
+	err = svc.db.FirstOrInit(user, User{AlbyIdentifier: "dummylnbits"}).Error
+	if err != nil {
+		svc.Logger.Infof("Error getting user")
+		return nil, err
+	}
+	err = svc.db.Save(user).Error
+	if err != nil {
+		svc.Logger.Infof("Error creating user")
+		return nil, err
+	}
+
+	//register index handler
+	e.GET("/", svc.AppsListHandler)
+	svc.Logger.Infof("Connected to LNBITS")
+	return lnbitsClient, nil
 }
