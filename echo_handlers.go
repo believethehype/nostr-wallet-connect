@@ -141,8 +141,6 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 			//use local instance from config if not overwritten
 			if c.FormValue("lnbitshost") != "" {
 				lnbitshost = c.FormValue("lnbitshost")
-			} else {
-				lnbitshost = svc.cfg.LNBitsHost
 			}
 		}
 	}

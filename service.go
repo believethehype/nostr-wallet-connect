@@ -163,9 +163,14 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 	Client := svc.lnClient
 	if app.Backend == "lnbits" {
 		var lnbitsClient *LNClient
+		var host = app.BackendOptionsLNBitsHost
+		if app.BackendOptionsLNBitsHost == "" {
+			host = svc.cfg.LNBitsHost
+		}
+
 		var options = LNBitsOptions{
 			AdminKey: app.BackendOptionsLNBitsKey,
-			Host:     app.BackendOptionsLNBitsHost,
+			Host:     host,
 		}
 		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
 	}
