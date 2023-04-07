@@ -165,7 +165,12 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 		var lnbitsClient *LNClient
 		var host = app.BackendOptionsLNBitsHost
 		if app.BackendOptionsLNBitsHost == "" {
-			host = svc.cfg.LNBitsHost
+			if svc.cfg.LNBitsHost != "" {
+				host = svc.cfg.LNBitsHost
+			} else {
+				host = "http://" + svc.cfg.LnBitsUmbrel + ":3007"
+			}
+
 		}
 
 		var options = LNBitsOptions{
