@@ -94,8 +94,9 @@ func (svc *Service) AppsNewHandler(c echo.Context) error {
 	svc.db.First(&user, userID)
 
 	return c.Render(http.StatusOK, "apps/new.html", map[string]interface{}{
-		"User": user,
-		"Name": appName,
+		"User":    user,
+		"Name":    appName,
+		"Backend": svc.cfg.LNBackendType,
 	})
 }
 
@@ -117,7 +118,36 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		pairingPublicKey = c.FormValue("pubkey")
 	}
 
-	err := svc.db.Model(&user).Association("Apps").Append(&App{Name: name, NostrPubkey: pairingPublicKey})
+	backend := "alby"
+
+	var description = ""
+	if c.FormValue("description") != "" {
+		description = c.FormValue("description")
+	}
+
+	var lnbitsadminkey = ""
+	var lnbitshost = ""
+
+	if svc.cfg.LNBackendType != AlbyBackendType {
+		backend = "lnd"
+
+		if c.FormValue("backend") != "" {
+			backend = c.FormValue("backend")
+		}
+		if backend == "lnbits" {
+			if c.FormValue("lnbitsadminkey") != "" {
+				lnbitsadminkey = c.FormValue("lnbitsadminkey")
+			}
+			//use local instance from config if not overwritten
+			if c.FormValue("lnbitshost") != "" {
+				lnbitshost = c.FormValue("lnbitshost")
+			} else {
+				lnbitshost = svc.cfg.LNBitsHost
+			}
+		}
+	}
+
+	err := svc.db.Model(&user).Association("Apps").Append(&App{Name: name, NostrPubkey: pairingPublicKey, Description: description, Backend: backend, BackendOptionsLNBitsKey: lnbitsadminkey, BackendOptionsLNBitsHost: lnbitshost})
 	if err == nil {
 		pairingUri := template.URL(fmt.Sprintf("nostrwalletconnect://%s?relay=%s&secret=%s", svc.cfg.IdentityPubkey, svc.cfg.Relay, pairingSecretKey))
 		return c.Render(http.StatusOK, "apps/create.html", map[string]interface{}{

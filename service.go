@@ -153,12 +153,22 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 	}
 
 	svc.Logger.WithFields(logrus.Fields{
-		"eventId":   event.ID,
-		"eventKind": event.Kind,
-		"appId":     app.ID,
-		"bolt11":    bolt11,
+		"eventId":    event.ID,
+		"eventKind":  event.Kind,
+		"appId":      app.ID,
+		"appBackend": app.Backend,
+		"bolt11":     bolt11,
 	}).Info("Sending payment")
 
+	Client := svc.lnClient
+	if app.Backend == "lnbits" {
+		var lnbitsClient *LNClient
+		var options = LNBitsOptions{
+			AdminKey: app.BackendOptionsLNBitsKey,
+			Host:     app.BackendOptionsLNBitsHost,
+		}
+		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
+	}
 	preimage, err := svc.lnClient.SendPaymentSync(ctx, event.PubKey, bolt11)
 	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
@@ -172,10 +182,12 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 		return svc.createResponse(NIP_47_ERROR_RESPONSE_KIND, event, err.Error(), ss)
 	}
 	payment.Preimage = preimage
+
+	svc.lnClient = Client
 	nostrEvent.State = "executed"
 	svc.db.Save(&nostrEvent)
 	svc.db.Save(&payment)
-	return svc.createResponse(NIP_47_SUCCESS_RESPONSE_KIND, event, preimage, ss)
+	return svc.createResponse(NIP_47_SUCCESS_RESPONSE_KIND, event, payment.Preimage, ss)
 }
 
 func (svc *Service) createResponse(kind int, initialEvent *nostr.Event, content string, ss []byte) (result *nostr.Event, err error) {
@@ -197,7 +209,7 @@ func (svc *Service) createResponse(kind int, initialEvent *nostr.Event, content 
 	return resp, nil
 }
 
-func (svc *Service) InitSelfHostedLNDService(ctx context.Context, e *echo.Echo) (result *lnd.LNDWrapper, err error) {
+func (svc *Service) InitSelfHostedService(ctx context.Context, e *echo.Echo) (result *lnd.LNDWrapper, err error) {
 	lndClient, err := lnd.NewLNDclient(lnd.LNDoptions{
 		Address:      svc.cfg.LNDAddress,
 		CertFile:     svc.cfg.LNDCertFile,
@@ -225,29 +237,4 @@ func (svc *Service) InitSelfHostedLNDService(ctx context.Context, e *echo.Echo) 
 	e.GET("/", svc.AppsListHandler)
 	svc.Logger.Infof("Connected to LND - alias %s", info.Alias)
 	return lndClient, nil
-}
-
-func (svc *Service) InitSelfHostedLNBITSService(ctx context.Context, e *echo.Echo) (result *LNClient, err error) {
-	lnbitsClient, err := NewLNBitslient()
-	if err != nil {
-		return nil, err
-	}
-
-	//add default user to db
-	user := &User{}
-	err = svc.db.FirstOrInit(user, User{AlbyIdentifier: "dummylnbits"}).Error
-	if err != nil {
-		svc.Logger.Infof("Error getting user")
-		return nil, err
-	}
-	err = svc.db.Save(user).Error
-	if err != nil {
-		svc.Logger.Infof("Error creating user")
-		return nil, err
-	}
-
-	//register index handler
-	e.GET("/", svc.AppsListHandler)
-	svc.Logger.Infof("Connected to LNBITS")
-	return lnbitsClient, nil
 }

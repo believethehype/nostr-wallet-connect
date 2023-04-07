@@ -22,11 +22,6 @@ type LNBitsWrapper struct {
 	options LNBitsOptions
 }
 
-func NewLNBitslient() (result *LNClient, err error) {
-	var client *LNClient
-	return client, err
-}
-
 func (lnbits *LNBitsWrapper) SendPaymentSync(ctx context.Context, senderPubkey, payReq string) (preimage string, err error) {
 	httpclient := &http.Client{
 		Timeout: 10 * time.Second,

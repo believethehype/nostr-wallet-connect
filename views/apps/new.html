@@ -1,4 +1,17 @@
 {{define "body"}}
+<body onload="showBackendChoice()"></body>
+<div class="backend">{{.Backend }}</div>
+<script>
+    function showBackendChoice(){
+      console.log(document.getElementById('backend')[0].innerHTML)
+      if  (document.getElementById('backend')[0].innerHTML != "ALBY"){
+        document.getElementById('backendoptions').style.display = "block";
+     } else{
+   document.getElementById('backendoptions').style.display = "none";
+      }
+    }
+</script>
+
 <a class="mb-6 block" href="/apps">
   <i class="fas fa-arrow-left" aria-hidden="true"></i>
   Back
@@ -41,6 +54,48 @@
       <p id="helper-text-explanation" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
         Manually configure the public pairing key for this session.
       </p>
+
+
+<div id="backendoptions">
+    <select name="backend" id="backend" v-model="backend" onchange="showBackendOptions(this)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+      <option value="lnd">LND</option>
+      <option value="lnbits">LNBITS</option>
+    </select>
+    <p id="helper-text-explanation2" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+      Select Backend to use
+    </p>
+
+   
+    <div id="lnbitsoptions" style="display: none">
+
+          <label for="lnbitsadminkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
+          <input type="lnbitsadminkey" name="lnbitsadminkey" id="lnbitsadminkey" aria-describedby="helper-text-explanation"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            placeholder="12345">
+          <p id="helper-text-explanation3" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          In Order to use lnbits instead of LND, enter your wallet's admin key
+          </p>
+          <label for="lnbitshost" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
+          <input type="lnbitshost" name="lnbitshost" id="lnbitshost" aria-describedby="helper-text-explanation"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            placeholder="">
+          <p id="helper-text-explanation4" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            LNbitsHost. Leave empty for local instance.
+          </p>
+          
+    </div>
+
+  </div>
+    <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
+    <input type="description" name="description" id="description" aria-describedby="helper-text-explanation"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+      placeholder="">
+    <p id="helper-text-explanation4" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+      Optional: Description to identify the session later
+    </p>
+      
+      
+    
     </div>
   </div>
 
@@ -50,5 +105,16 @@
   </button>
 
 </form>
+
+<script type="text/javascript">
+  function showBackendOptions(backend){
+     if(backend.value=='lnbits'){
+      document.getElementById('lnbitsoptions').style.display = "block";
+     } else{
+   document.getElementById('lnbitsoptions').style.display = "none";
+}
+  } 
+  </script>
+
 
 {{end}}
