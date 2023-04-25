@@ -15,7 +15,7 @@ COPY . .
 RUN go build -o main
 
 # Start a new, final image to reduce size.
-FROM alpine as final
+FROM node:12-buster-slim
 
 # Copy the binaries and entrypoint from the builder image.
 COPY --from=builder /build/main /bin/
