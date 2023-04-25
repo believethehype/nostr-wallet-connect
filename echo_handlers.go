@@ -45,16 +45,36 @@ func (svc *Service) RegisterSharedRoutes(e *echo.Echo) {
 	e.POST("/apps", svc.AppsCreateHandler)
 	e.POST("/apps/delete/:id", svc.AppsDeleteHandler)
 	e.GET("/logout", svc.LogoutHandler)
+	e.GET("/", svc.IndexHandler)
+}
+
+func (svc *Service) IndexHandler(c echo.Context) error {
+	sess, _ := session.Get("alby_nostr_wallet_connect", c)
+	returnTo := sess.Values["return_to"]
+	user, err := svc.GetUser(c)
+	if err != nil {
+		return err
+	}
+	if user != nil && returnTo != nil {
+		delete(sess.Values, "return_to")
+		sess.Save(c.Request(), c.Response())
+		return c.Redirect(302, fmt.Sprintf("%s", returnTo))
+	}
+	if user != nil {
+		return c.Redirect(302, "/apps")
+	}
+	return c.Render(http.StatusOK, "index.html", map[string]interface{}{})
 }
 
 func (svc *Service) AppsListHandler(c echo.Context) error {
-	userID := svc.GetUserID(c)
-	if userID == nil {
+	user, err := svc.GetUser(c)
+	if err != nil {
+		return err
+	}
+	if user == nil {
 		return c.Redirect(302, "/")
 	}
 
-	user := User{}
-	svc.db.Preload("Apps").First(&user, userID)
 	apps := user.Apps
 	return c.Render(http.StatusOK, "apps/index.html", map[string]interface{}{
 		"Apps": apps,
@@ -63,13 +83,14 @@ func (svc *Service) AppsListHandler(c echo.Context) error {
 }
 
 func (svc *Service) AppsShowHandler(c echo.Context) error {
-	userID := svc.GetUserID(c)
-	if userID == nil {
+	user, err := svc.GetUser(c)
+	if err != nil {
+		return err
+	}
+	if user == nil {
 		return c.Redirect(302, "/")
 	}
 
-	user := User{}
-	svc.db.Preload("Apps").First(&user, userID)
 	app := App{}
 	svc.db.Where("user_id = ?", user.ID).First(&app, c.Param("id"))
 	lastEvent := NostrEvent{}
@@ -85,14 +106,17 @@ func (svc *Service) AppsShowHandler(c echo.Context) error {
 }
 
 func (svc *Service) AppsNewHandler(c echo.Context) error {
-	userID := svc.GetUserID(c)
 	appName := c.QueryParam("c") // c - for client
-	if userID == nil {
-		return c.Redirect(302, "/?c="+appName)
+	user, err := svc.GetUser(c)
+	if err != nil {
+		return err
 	}
-	user := User{}
-	svc.db.First(&user, userID)
-
+	if user == nil {
+		sess, _ := session.Get("alby_nostr_wallet_connect", c)
+		sess.Values["return_to"] = c.Path() + "?" + c.QueryString()
+		sess.Save(c.Request(), c.Response())
+		return c.Redirect(302, "/")
+	}
 	return c.Render(http.StatusOK, "apps/new.html", map[string]interface{}{
 		"User":    user,
 		"Name":    appName,
@@ -101,12 +125,13 @@ func (svc *Service) AppsNewHandler(c echo.Context) error {
 }
 
 func (svc *Service) AppsCreateHandler(c echo.Context) error {
-	userID := svc.GetUserID(c)
-	if userID == nil {
+	user, err := svc.GetUser(c)
+	if err != nil {
+		return err
+	}
+	if user == nil {
 		return c.Redirect(302, "/")
 	}
-	user := User{}
-	svc.db.Preload("Apps").First(&user, userID)
 
 	name := c.FormValue("name")
 	var pairingPublicKey string
@@ -164,12 +189,13 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 }
 
 func (svc *Service) AppsDeleteHandler(c echo.Context) error {
-	userID := svc.GetUserID(c)
-	if userID == nil {
+	user, err := svc.GetUser(c)
+	if err != nil {
+		return err
+	}
+	if user == nil {
 		return c.Redirect(302, "/")
 	}
-	user := User{}
-	svc.db.Preload("Apps").First(&user, userID)
 	app := App{}
 	svc.db.Where("user_id = ?", user.ID).First(&app, c.Param("id"))
 	svc.db.Delete(&app)
