@@ -11,6 +11,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGENAME: ${{ github.event.repository.name }}
+      TAG: 1.0
       
     runs-on: ubuntu-20.04
 
@@ -39,12 +40,18 @@ jobs:
     - name: Download wallet-connect build scripts
       run: |
         git clone https://github.com/believethehype/nostr-wallet-connect.git
-              
+        
+    - uses: actions/checkout@v2
+      name: Check out code
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.20.x
     - name: Build Nostr-Wallet-Connect
       run: |
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
-          --tag "${tag}" \
+          --tag "${TAG}" \
           --push "${IMAGENAME}"
       
         
