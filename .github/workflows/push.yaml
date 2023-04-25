@@ -11,7 +11,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGENAME: ${{ github.event.repository.name }}
-      TAG: 1.0
+      TAG: getumbrel\nostr-wallet-connect:0.1
       
     runs-on: ubuntu-20.04
 
@@ -46,11 +46,13 @@ jobs:
         go-version: 1.20.x
     - name: Run tests
       run:  go test
-    - name: Build Nostr-Wallet-Connect
+    - name: Build Nostr-Wallet-Connect Docker Image
       run: |
+        cd ..
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --tag "${TAG}" \
+          --output "type=registry" \
           --push "${IMAGENAME}"
       
         
