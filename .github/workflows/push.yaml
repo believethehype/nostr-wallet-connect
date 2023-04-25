@@ -50,7 +50,7 @@ jobs:
       run: |
         cd nostr-wallet-connect
         echo "Building $IMAGE_NAME"
-        sudo IMG_FILENAME=$IMAGE_NAME ZIP_FILENAME=$IMAGE_NAME UMBREL_OS_VERSION=$UMBREL_OS_VERSION UMBREL_REPO=$UMBREL_REPO UMBREL_BRANCH=$UMBREL_BRANCH ./build.sh
+        sudo ./build/app-proxy
         cd ..
         
     - name: Copy ZIP to current working dir
