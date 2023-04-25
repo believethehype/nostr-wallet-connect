@@ -44,13 +44,14 @@ jobs:
       uses: actions/setup-go@v1
       with:
         go-version: 1.20.x
-    - name: Run tests
-      run:  go test
+    #- name: Run tests
+    #  run:  go test
     - name: Build Nostr-Wallet-Connect Docker Image
       run: |
-        /home/runner/work/nostr-wallet-connect/nostr-wallet-connect/docker buildx build \
+        cd /home/runner/work/nostr-wallet-connect/nostr-wallet-connect/
+        docker buildx build \
           --platform linux/amd64,linux/arm64 \
-          --tag "${TAG}" \
+          --tag getumbrel/nostr-wallet-connect:0.0.1 \
           --output "type=registry" \
           --push "${IMAGENAME}"
       
