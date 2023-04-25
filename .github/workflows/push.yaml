@@ -11,7 +11,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGENAME: ${{ github.event.repository.name }}
-      TAG: nostr-wallet-connect:0.1
+      TAG: 0.1
       
     runs-on: ubuntu-20.04
 
@@ -48,8 +48,7 @@ jobs:
       run:  go test
     - name: Build Nostr-Wallet-Connect Docker Image
       run: |
-        cd /home/runner/work/nostr-wallet-connect/nostr-wallet-connect
-        docker buildx build \
+        /home/runner/work/nostr-wallet-connect/nostr-wallet-connect/docker buildx build \
           --platform linux/amd64,linux/arm64 \
           --tag "${TAG}" \
           --output "type=registry" \
