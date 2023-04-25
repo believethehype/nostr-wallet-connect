@@ -8,6 +8,10 @@ on:
 jobs:
   build:
 
+    env:
+      REGISTRY: ghcr.io
+      IMAGENAME: ${{ github.event.repository.name }}
+      
     runs-on: ubuntu-20.04
 
     steps:
@@ -35,23 +39,14 @@ jobs:
     - name: Download wallet-connect build scripts
       run: |
         git clone https://github.com/believethehype/nostr-wallet-connect.git
-    - name: Setting env vars
-      run: |
-        UMBREL_OS_VERSION="dev"
-        IMAGE_NAME="nostr-wallet-connect"
-        UMBREL_REPO="https://github.com/believethehype/nostr-wallet-connect.git"
-        UMBREL_BRANCH="rpi-docker"
-        echo "UMBREL_OS_VERSION=$UMBREL_OS_VERSION" >> $GITHUB_ENV
-        echo "IMAGE_NAME=$IMAGE_NAME">> $GITHUB_ENV
-        echo "UMBREL_REPO=$UMBREL_REPO">> $GITHUB_ENV
-        echo "UMBREL_BRANCH=$UMBREL_BRANCH" >> $GITHUB_ENV
               
-    - name: Build Nostr-Connect
+    - name: Build Nostr-Wallet-Connect
       run: |
-        cd nostr-wallet-connect
-        echo "Building $IMAGE_NAME"
-        sudo ./build/app-proxy
-        cd ..
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --tag "${tag}" \
+          --push "${IMAGENAME}"
+      
         
     - name: Copy ZIP to current working dir
       run: cp nostr-wallet-connect/deploy/*.zip ./
