@@ -170,7 +170,7 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		}
 	}
 
-	err := svc.db.Model(&user).Association("Apps").Append(&App{Name: name, NostrPubkey: pairingPublicKey, Description: description, Backend: backend, BackendOptionsLNBitsKey: lnbitsadminkey, BackendOptionsLNBitsHost: lnbitshost})
+	err = svc.db.Model(&user).Association("Apps").Append(&App{Name: name, NostrPubkey: pairingPublicKey, Description: description, Backend: backend, BackendOptionsLNBitsKey: lnbitsadminkey, BackendOptionsLNBitsHost: lnbitshost})
 	if err == nil {
 		pairingUri := template.URL(fmt.Sprintf("nostrwalletconnect://%s?relay=%s&secret=%s", svc.cfg.IdentityPubkey, svc.cfg.Relay, pairingSecretKey))
 		return c.Render(http.StatusOK, "apps/create.html", map[string]interface{}{
