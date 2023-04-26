@@ -58,13 +58,13 @@
       onclick="document.getElementById('advanced-settings').classList.toggle('hidden');return false">Advanced
       settings</a>
     <div id="advanced-settings" class="hidden">
-      <label for="pubkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
+      <!-- <label for="pubkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
       <input type="pubkey" name="pubkey" id="pubkey" aria-describedby="helper-text-explanation"
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
         placeholder="npub..." pattern="npub.*">
       <p id="helper-text-explanation" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
         Manually configure the public pairing key for this session.
-      </p>
+      </p> -->
     <div id="backendoptions">
         <select name="backend" id="backend" v-model="backend" onchange="showBackendOptions(this)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
           <option value="lnd">LND</option>
