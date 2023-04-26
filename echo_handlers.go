@@ -193,18 +193,11 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 	}
 
 	backend := "alby"
-
-	var description = ""
-	if c.FormValue("description") != "" {
-		description = c.FormValue("description")
-	}
-
 	var lnbitsadminkey = ""
 	var lnbitshost = ""
 
 	if svc.cfg.LNBackendType != AlbyBackendType {
 		backend = "lnd"
-
 		if c.FormValue("backend") != "" {
 			backend = c.FormValue("backend")
 		}
@@ -219,7 +212,7 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		}
 	}
 
-	err = svc.db.Model(&user).Association("Apps").Append(&App{Name: name, NostrPubkey: pairingPublicKey, Description: description, Backend: backend, BackendOptionsLNBitsKey: lnbitsadminkey, BackendOptionsLNBitsHost: lnbitshost})
+	err = svc.db.Model(&user).Association("Apps").Append(&App{Name: name, NostrPubkey: pairingPublicKey, Backend: backend, BackendOptionsLNBitsKey: lnbitsadminkey, BackendOptionsLNBitsHost: lnbitshost})
 	if err == nil {
 		if c.FormValue("returnTo") != "" {
 			return c.Redirect(302, c.FormValue("returnTo"))
