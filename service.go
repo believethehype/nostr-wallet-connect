@@ -219,8 +219,8 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 	}
 
 	hasPermission, code, message := svc.hasPermission(&app, event, requestMethod, &paymentRequest)
-	
-	if (!hasPermission) {
+
+	if !hasPermission {
 		svc.Logger.WithFields(logrus.Fields{
 			"eventId":   event.ID,
 			"eventKind": event.Kind,
@@ -243,15 +243,15 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 		"eventId":    event.ID,
 		"eventKind":  event.Kind,
 		"appId":      app.ID,
-		"appBackend": app.Backend,
+		"appBackend": app.BackendOptions.Backend,
 		"bolt11":     bolt11,
 	}).Info("Sending payment")
 
 	Client := svc.lnClient
-	if app.Backend == "lnbits" {
+	if app.BackendOptions.Backend == "lnbits" {
 		var lnbitsClient *LNClient
-		var host = app.BackendOptionsLNBitsHost
-		if app.BackendOptionsLNBitsHost == "" {
+		var host = app.BackendOptions.LNBitsHost
+		if app.BackendOptions.LNBitsHost == "" {
 			if svc.cfg.LNBitsHost != "" {
 				host = svc.cfg.LNBitsHost
 			} else {
@@ -259,7 +259,7 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 			}
 		}
 		var options = LNBitsOptions{
-			AdminKey: app.BackendOptionsLNBitsKey,
+			AdminKey: app.BackendOptions.LNBitsKey,
 			Host:     host,
 		}
 		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
@@ -361,7 +361,7 @@ func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod st
 	// find all permissions for the app
 	appPermissions := []AppPermission{}
 	findPermissionsResult := svc.db.Find(&appPermissions, &AppPermission{
-		AppId:     app.ID,
+		AppId: app.ID,
 	})
 	if findPermissionsResult.RowsAffected == 0 {
 		// No permissions created for this app. It can do anything
@@ -382,12 +382,12 @@ func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod st
 		svc.Logger.Info("This pubkey is expired")
 		return false, NIP_47_ERROR_EXPIRED, "This app has expired"
 	}
-	
+
 	maxAmount := appPermission.MaxAmount
 	if maxAmount != 0 {
 		budgetUsage := svc.GetBudgetUsage(&appPermission)
-		
-		if budgetUsage +paymentRequest.MSatoshi/1000 > int64(maxAmount) {
+
+		if budgetUsage+paymentRequest.MSatoshi/1000 > int64(maxAmount) {
 			return false, NIP_47_ERROR_QUOTA_EXCEEDED, "Insufficient budget remaining to make payment"
 		}
 	}

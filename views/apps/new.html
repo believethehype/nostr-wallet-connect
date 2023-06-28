@@ -162,7 +162,7 @@
     {{ end }}
 
   <div class="mb-4">
-    <a href="#" class="underline mb-4"
+    <a href="#"  class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
       onclick="document.getElementById('advanced-settings').classList.toggle('hidden');return false">Advanced
       settings</a>
     <div id="advanced-settings" class="hidden">
@@ -174,20 +174,22 @@
         <p id="helper-text-explanation2" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Select Backend to use
         </p>
+        <br>
         <div id="lnbitsoptions" style="display: none">
-              <label for="lnbitsadminkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
+              <label for="lnbitsadminkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Admin key</label>
               <input type="lnbitsadminkey" name="lnbitsadminkey" id="lnbitsadminkey" aria-describedby="helper-text-explanation"
                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="12345">
               <p id="helper-text-explanation3" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              In Order to use lnbits instead of LND, enter your wallet's admin key
+              Enter your LNBits wallet's admin key
               </p>
-              <label for="lnbitshost" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Public key</label>
+              <br>
+              <label for="lnbitshost" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Host</label>
               <input type="lnbitshost" name="lnbitshost" id="lnbitshost" aria-describedby="helper-text-explanation"
                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="">
               <p id="helper-text-explanation4" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                LNbitsHost. Leave empty for local instance.
+                Leave empty for using local instance.
               </p>
               <br>
         </div>

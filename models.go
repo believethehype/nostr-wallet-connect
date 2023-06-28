@@ -42,29 +42,33 @@ type User struct {
 }
 
 type App struct {
-	ID                       uint   `gorm:"primaryKey"`
-	UserId                   uint   `gorm:"index" validate:"required"`
-	User                     User   `gorm:"constraint:OnDelete:CASCADE"`
-	Name                     string `validate:"required"`
-	Description              string
-	NostrPubkey              string `gorm:"index"`
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
-	Backend                  string
-	BackendOptionsLNBitsKey  string
-	BackendOptionsLNBitsHost string
+	ID             uint   `gorm:"primaryKey"`
+	UserId         uint   `gorm:"index" validate:"required"`
+	User           User   `gorm:"constraint:OnDelete:CASCADE"`
+	Name           string `validate:"required"`
+	Description    string
+	NostrPubkey    string `gorm:"index"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	BackendOptions BackendOptions `gorm:"embedded"`
+}
+
+type BackendOptions struct {
+	Backend    string
+	LNBitsKey  string
+	LNBitsHost string
 }
 
 type AppPermission struct {
-	ID                      uint `gorm:"primaryKey"`
-	AppId                   uint `gorm:"index" validate:"required"`
-	App                     App  `gorm:"constraint:OnDelete:CASCADE"`
-	RequestMethod           string  `gorm:"index" validate:"required"`
-	MaxAmount               int
-	BudgetRenewal           string
-	ExpiresAt               time.Time
-	CreatedAt               time.Time
-	UpdatedAt               time.Time
+	ID            uint   `gorm:"primaryKey"`
+	AppId         uint   `gorm:"index" validate:"required"`
+	App           App    `gorm:"constraint:OnDelete:CASCADE"`
+	RequestMethod string `gorm:"index" validate:"required"`
+	MaxAmount     int
+	BudgetRenewal string
+	ExpiresAt     time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type NostrEvent struct {

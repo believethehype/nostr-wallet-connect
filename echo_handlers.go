@@ -263,26 +263,26 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		}
 	}
 
-	backend := "alby"
-	var lnbitsadminkey = ""
-	var lnbitshost = ""
+	backendOptions := BackendOptions{}
+	backendOptions.Backend = "alby"
+
 	if svc.cfg.LNBackendType != AlbyBackendType {
-		backend = "lnd"
+		backendOptions.Backend = "lnd"
 		if c.FormValue("backend") != "" {
-			backend = c.FormValue("backend")
+			backendOptions.Backend = c.FormValue("backend")
 		}
-		if backend == "lnbits" {
+		if backendOptions.Backend == "lnbits" {
 			if c.FormValue("lnbitsadminkey") != "" {
-				lnbitsadminkey = c.FormValue("lnbitsadminkey")
+				backendOptions.LNBitsKey = c.FormValue("lnbitsadminkey")
 			}
 			//use local instance from config if not overwritten
 			if c.FormValue("lnbitshost") != "" {
-				lnbitshost = c.FormValue("lnbitshost")
+				backendOptions.LNBitsHost = c.FormValue("lnbitshost")
 			}
 		}
 	}
 
-	app := App{Name: name, NostrPubkey: pairingPublicKey, Backend: backend, BackendOptionsLNBitsKey: lnbitsadminkey, BackendOptionsLNBitsHost: lnbitshost}
+	app := App{Name: name, NostrPubkey: pairingPublicKey, BackendOptions: backendOptions}
 
 	maxAmount, _ := strconv.Atoi(c.FormValue("MaxAmount"))
 	budgetRenewal := c.FormValue("BudgetRenewal")
