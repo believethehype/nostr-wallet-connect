@@ -31,7 +31,7 @@ var supportedMethods = map[string]bool{
 func (svc *Service) GetUser(c echo.Context) (user *User, err error) {
 	sess, _ := session.Get(CookieName, c)
 	userID := sess.Values["user_id"]
-	if svc.cfg.LNBackendType == LNDBackendType {
+	if svc.cfg.LNBackendType != AlbyBackendType  {
 		//if we self-host, there is always only one user
 		userID = 1
 	}

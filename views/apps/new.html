@@ -1,5 +1,23 @@
 {{define "body"}}
 
+<body onload="showBackendChoice()"></body>
+<div class="backend">{{.Backend }}</div>
+<script>
+    function showBackendChoice(){
+      console.log(document.getElementById('backend')[0].innerHTML)
+      if  (document.getElementById('backend')[0].innerHTML != "ALBY"){
+        document.getElementById('backendoptions').style.display = "block";
+     } else{
+         document.getElementById('backendoptions').style.display = "none";
+      }
+    }
+</script>
+
+<a class="mb-6 block" href="/apps">
+  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+  Back
+</a>
+
 <div
   class="w-full lg:w-8/12 mx-auto bg-white rounded-md shadow px-4 lg:px-12 py-4 lg:py-12 mb-10 dark:bg-surface-02dp"
 >
@@ -156,6 +174,41 @@
       </p>
     {{ end }}
 
+    <div class="mb-4">
+      <a href="#"  class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+        onclick="document.getElementById('advanced-settings').classList.toggle('hidden');return false">Advanced
+        settings</a>
+      <div id="advanced-settings" class="hidden">
+      <div id="backendoptions">
+          <select name="backend" id="backend" v-model="backend" onchange="showBackendOptions(this)" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+            <option value="lnd">LND</option>
+            <option value="lnbits">LNBITS</option>
+          </select>
+          <p id="helper-text-explanation2" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Select Backend to use
+          </p>
+          <br>
+          <div id="lnbitsoptions" style="display: none">
+                <label for="lnbitsadminkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Admin key</label>
+                <input type="lnbitsadminkey" name="lnbitsadminkey" id="lnbitsadminkey" aria-describedby="helper-text-explanation"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  placeholder="12345">
+                <p id="helper-text-explanation3" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Enter your LNBits wallet's admin key
+                </p>
+                <br>
+                <label for="lnbitshost" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Host</label>
+                <input type="lnbitshost" name="lnbitshost" id="lnbitshost" aria-describedby="helper-text-explanation"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  placeholder="">
+                <p id="helper-text-explanation4" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Leave empty for using local instance.
+                </p>
+                <br>
+          </div>
+      </div>
+    </div>
+  
     <div class="flex flex-col sm:flex-row sm:justify-center">
       {{ if not .Pubkey }}
       <a
@@ -237,5 +290,14 @@
       document.getElementById("RequestMethods").value = checkedValues.trim();
     })
   })
+  
+  function showBackendOptions(backend){
+     if(backend.value=='lnbits'){
+      document.getElementById('lnbitsoptions').style.display = "block";
+     } else{
+   document.getElementById('lnbitsoptions').style.display = "none";
+}
+  } 
+  </script>
 </script>
 {{end}}
