@@ -331,7 +331,27 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 			return c.Redirect(302, "/apps")
 		}
 	}
-	app := App{Name: name, NostrPubkey: pairingPublicKey}
+	backendOptions := BackendOptions{}
+	backendOptions.Backend = "alby"
+
+	if svc.cfg.LNBackendType != AlbyBackendType {
+		backendOptions.Backend = "lnd"
+		if c.FormValue("backend") != "" {
+			backendOptions.Backend = c.FormValue("backend")
+		}
+		if backendOptions.Backend == "lnbits" {
+			if c.FormValue("lnbitsadminkey") != "" {
+				backendOptions.LNBitsKey = c.FormValue("lnbitsadminkey")
+			}
+			//use local instance from config if not overwritten
+			if c.FormValue("lnbitshost") != "" {
+				backendOptions.LNBitsHost = c.FormValue("lnbitshost")
+			}
+		}
+	}
+
+	app := App{Name: name, NostrPubkey: pairingPublicKey, BackendOptions: backendOptions}
+
 	maxAmount, _ := strconv.Atoi(c.FormValue("MaxAmount"))
 	budgetRenewal := c.FormValue("BudgetRenewal")
 	expiresAt, _ := time.Parse("2006-01-02", c.FormValue("ExpiresAt"))
@@ -406,6 +426,7 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		"PairingSecret": pairingSecretKey,
 		"Pubkey":        pairingPublicKey,
 		"Name":          name,
+		"Backend":       svc.cfg.LNBackendType,
 	})
 }
 
