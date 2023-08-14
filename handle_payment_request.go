@@ -44,8 +44,13 @@ func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Req
 			"appId":     app.ID,
 			"bolt11":    bolt11,
 		}).Errorf("Failed to decode bolt11 invoice: %v", err)
-		//todo: create & send response
-		return nil, err
+
+		return svc.createResponse(event, Nip47Response{
+			Error: &Nip47Error{
+				Code:    NIP_47_ERROR_INTERNAL,
+				Message: fmt.Sprintf("Failed to decode bolt11 invoice: %s", err.Error()),
+			},
+		}, ss)
 	}
 
 	hasPermission, code, message := svc.hasPermission(&app, event, request.Method, &paymentRequest)
@@ -78,20 +83,7 @@ func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Req
 
 	Client := svc.lnClient
 	if app.BackendOptions.Backend == "lnbits" {
-		var lnbitsClient *LNClient
-		var host = app.BackendOptions.LNBitsHost
-		if app.BackendOptions.LNBitsHost == "" {
-			if svc.cfg.LNBitsHost != "" {
-				host = svc.cfg.LNBitsHost
-			} else {
-				host = "http://" + svc.cfg.LnBitsUmbrel + ":3007"
-			}
-		}
-		var options = LNBitsOptions{
-			AdminKey: app.BackendOptions.LNBitsKey,
-			Host:     host,
-		}
-		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
+		svc.lnClient = setClientLNBits(app, svc)
 	}
 	preimage, err := svc.lnClient.SendPaymentSync(ctx, event.PubKey, bolt11)
 	if err != nil {
