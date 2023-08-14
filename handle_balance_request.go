@@ -42,6 +42,11 @@ func (svc *Service) HandleGetBalanceEvent(ctx context.Context, request *Nip47Req
 		"appId":     app.ID,
 	}).Info("Fetching balance")
 
+	Client := svc.lnClient
+	if app.BackendOptions.Backend == "lnbits" {
+		svc.lnClient = setClientLNBits(app, svc)
+	}
+
 	balance, err := svc.lnClient.GetBalance(ctx, event.PubKey)
 	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
@@ -72,11 +77,12 @@ func (svc *Service) HandleGetBalanceEvent(ctx context.Context, request *Nip47Req
 		responsePayload.BudgetRenewal = appPermission.BudgetRenewal
 	}
 
+	svc.lnClient = Client
 	nostrEvent.State = "executed"
 	svc.db.Save(&nostrEvent)
 	return svc.createResponse(event, Nip47Response{
 		ResultType: NIP_47_GET_BALANCE_METHOD,
-		Result: responsePayload,
+		Result:     responsePayload,
 	},
-	ss)
+		ss)
 }
