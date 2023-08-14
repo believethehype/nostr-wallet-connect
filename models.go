@@ -59,6 +59,13 @@ type App struct {
 	NostrPubkey string `gorm:"index"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	BackendOptions BackendOptions `gorm:"embedded"`
+}
+
+type BackendOptions struct {
+	Backend    string
+	LNBitsKey  string
+	LNBitsHost string
 }
 
 type AppPermission struct {

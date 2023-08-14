@@ -81,6 +81,23 @@ func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Req
 		"bolt11":    bolt11,
 	}).Info("Sending payment")
 
+	Client := svc.lnClient
+	if app.BackendOptions.Backend == "lnbits" {
+		var lnbitsClient *LNClient
+		var host = app.BackendOptions.LNBitsHost
+		if app.BackendOptions.LNBitsHost == "" {
+			if svc.cfg.LNBitsHost != "" {
+				host = svc.cfg.LNBitsHost
+			} else {
+				host = "http://" + svc.cfg.LnBitsUmbrel + ":3007"
+			}
+		}
+		var options = LNBitsOptions{
+			AdminKey: app.BackendOptions.LNBitsKey,
+			Host:     host,
+		}
+		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
+	}
 	preimage, err := svc.lnClient.SendPaymentSync(ctx, event.PubKey, bolt11)
 	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
@@ -99,6 +116,7 @@ func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Req
 		}, ss)
 	}
 	payment.Preimage = preimage
+	svc.lnClient = Client
 	nostrEvent.State = "executed"
 	svc.db.Save(&nostrEvent)
 	svc.db.Save(&payment)
