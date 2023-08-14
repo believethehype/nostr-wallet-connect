@@ -10,6 +10,11 @@ import (
 
 func (svc *Service) HandleGetBalanceEvent(ctx context.Context, request *Nip47Request, event *nostr.Event, app App, ss []byte) (result *nostr.Event, err error) {
 
+	Client := svc.lnClient
+	if app.BackendOptions.Backend == "lnbits" {
+		svc.lnClient = setClientLNBits(app, svc)
+	}
+
 	nostrEvent := NostrEvent{App: app, NostrId: event.ID, Content: event.Content, State: "received"}
 	insertNostrEventResult := svc.db.Create(&nostrEvent)
 	if insertNostrEventResult.Error != nil {
@@ -41,11 +46,6 @@ func (svc *Service) HandleGetBalanceEvent(ctx context.Context, request *Nip47Req
 		"eventKind": event.Kind,
 		"appId":     app.ID,
 	}).Info("Fetching balance")
-
-	Client := svc.lnClient
-	if app.BackendOptions.Backend == "lnbits" {
-		svc.lnClient = setClientLNBits(app, svc)
-	}
 
 	balance, err := svc.lnClient.GetBalance(ctx, event.PubKey)
 	if err != nil {
