@@ -13,6 +13,11 @@ import (
 
 func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Request, event *nostr.Event, app App, ss []byte) (result *nostr.Event, err error) {
 	// TODO: move to a shared function
+
+	Client := svc.lnClient
+	if app.BackendOptions.Backend == "lnbits" {
+		svc.lnClient = setClientLNBits(app, svc)
+	}
 	nostrEvent := NostrEvent{App: app, NostrId: event.ID, Content: event.Content, State: "received"}
 	insertNostrEventResult := svc.db.Create(&nostrEvent)
 	if insertNostrEventResult.Error != nil {
@@ -62,10 +67,6 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 		"expiry":          makeInvoiceParams.Expiry,
 	}).Info("Making invoice")
 
-	Client := svc.lnClient
-	if app.BackendOptions.Backend == "lnbits" {
-		svc.lnClient = setClientLNBits(app, svc)
-	}
 	invoice, paymentHash, err := svc.lnClient.MakeInvoice(ctx, event.PubKey, makeInvoiceParams.Amount, makeInvoiceParams.Description, makeInvoiceParams.DescriptionHash, makeInvoiceParams.Expiry)
 	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
