@@ -12,12 +12,8 @@ import (
 )
 
 func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Request, event *nostr.Event, app App, ss []byte) (result *nostr.Event, err error) {
-	// TODO: move to a shared function
 
-	Client := svc.lnClient
-	if app.BackendOptions.Backend == "lnbits" {
-		svc.lnClient = setClientLNBits(app, svc)
-	}
+	// TODO: move to a shared function
 	nostrEvent := NostrEvent{App: app, NostrId: event.ID, Content: event.Content, State: "received"}
 	err = svc.db.Create(&nostrEvent).Error
 	if err != nil {
@@ -112,11 +108,9 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 	}
 
 	nostrEvent.State = NOSTR_EVENT_STATE_HANDLER_EXECUTED
-  svc.lnClient = Client
 	svc.db.Save(&nostrEvent)
 	return svc.createResponse(event, Nip47Response{
 		ResultType: NIP_47_MAKE_INVOICE_METHOD,
-
 		Result:     responsePayload,
 	},
 		ss)
