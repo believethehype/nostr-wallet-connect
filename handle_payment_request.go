@@ -13,6 +13,11 @@ import (
 
 func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Request, event *nostr.Event, app App, ss []byte) (result *nostr.Event, err error) {
 
+	Client := svc.lnClient
+	if app.BackendOptions.Backend == "lnbits" {
+		svc.lnClient = setClientLNBits(app, svc)
+	}
+
 	nostrEvent := NostrEvent{App: app, NostrId: event.ID, Content: event.Content, State: "received"}
 	err = svc.db.Create(&nostrEvent).Error
 	if err != nil {
@@ -104,6 +109,7 @@ func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Req
 		}
 		svc.lnClient = &LNBitsWrapper{lnbitsClient, options}
 	}
+
 	preimage, err := svc.lnClient.SendPaymentSync(ctx, event.PubKey, bolt11)
 	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
@@ -122,9 +128,11 @@ func (svc *Service) HandlePayInvoiceEvent(ctx context.Context, request *Nip47Req
 			},
 		}, ss)
 	}
+
 	payment.Preimage = &preimage
 	svc.lnClient = Client
 	nostrEvent.State = NOSTR_EVENT_STATE_HANDLER_EXECUTED
+
 	svc.db.Save(&nostrEvent)
 	svc.db.Save(&payment)
 	return svc.createResponse(event, Nip47Response{

@@ -4,6 +4,24 @@
   Back
 </a>
 
+<body onload="showBackendChoice()"></body>
+<div class="backend">{{.Backend }}</div>
+<script>
+    function showBackendChoice(){
+      console.log(document.getElementById('backend')[0].innerHTML)
+      if  (document.getElementById('backend')[0].innerHTML != "ALBY"){
+        document.getElementById('backendoptions').style.display = "block";
+     } else{
+         document.getElementById('backendoptions').style.display = "none";
+      }
+    }
+</script>
+
+<a class="mb-6 block" href="/apps">
+  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+  Back
+</a>
+
 <div
   class="w-full lg:w-8/12 mx-auto bg-white rounded-md shadow px-4 lg:px-12 py-4 lg:py-12 mb-10 dark:bg-surface-02dp"
 >
@@ -140,14 +158,13 @@
       </p>
     {{ end }}
 
-
-    
     <div class="mb-4">
       <div id="backendoptions">
           <div id="lnbitsoptions" style="display: none">
                 <label for="lnbitsadminkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Admin key</label>
                 <input type="lnbitsadminkey" name="lnbitsadminkey" id="lnbitsadminkey" aria-describedby="helper-text-explanation"
                   class="bg-gray-50 border border-gray-300 text-gray-900 focus:ring-purple-700 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 text-sm rounded-lg block w-full p-2.5 dark:bg-surface-00dp dark:border-gray-700 dark:placeholder-gray-400 dark:text-white"
+
                   placeholder="12345">
                 <p id="helper-text-explanation3" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Enter your LNBits wallet's admin key
@@ -162,7 +179,6 @@
                 </p>
                 <br>
           </div>
-  
     </div>
   
     <div class="flex flex-col sm:flex-row sm:justify-center">

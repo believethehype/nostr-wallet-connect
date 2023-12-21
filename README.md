@@ -11,6 +11,7 @@ Connect applications like [Damus](https://damus.io/) or [Amethyst](https://linkt
 
 * [Alby](https://getalby.com) (see: alby.go)
 * LND (see: lnd.go)
+* LNBITS (see lnbits.go, for now specific to this fork)
 * want more? please open an issue.
 
 ## Installation

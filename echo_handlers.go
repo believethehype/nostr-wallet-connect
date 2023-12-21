@@ -352,9 +352,6 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 	backendOptions.Backend = "alby"
 
 	if svc.cfg.LNBackendType != AlbyBackendType {
-		print(c.FormValue("backend" + "\n\n"))
-		print(c.FormValue("lnbitsadminkey" + "\n\n"))
-
 		svc.Logger.WithFields(logrus.Fields{
 			"backend":        c.FormValue("Backend"),
 			"lnbitsadminkey": c.FormValue("lnbitsadminkey"),
@@ -363,6 +360,7 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		backendOptions.Backend = "lnd"
 		if c.FormValue("Backend") != "" {
 			backendOptions.Backend = c.FormValue("Backend")
+
 		}
 		if backendOptions.Backend == "lnbits" {
 			if c.FormValue("lnbitsadminkey") != "" {
@@ -465,6 +463,7 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		"Pubkey":        pairingPublicKey,
 		"Name":          name,
 		"Backend":       app.BackendOptions.Backend,
+
 	})
 }
 
