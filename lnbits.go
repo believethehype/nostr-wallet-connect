@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,7 +25,7 @@ type LNBitsWrapper struct {
 
 func (lnbits *LNBitsWrapper) GetBalance(ctx context.Context, senderPubkey string) (balance int64, err error) {
 	httpclient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 20 * time.Second,
 	}
 	req, err := http.NewRequest("GET",
 		lnbits.options.Host+"/api/v1/wallet",
@@ -67,7 +68,7 @@ func (lnbits *LNBitsWrapper) GetBalance(ctx context.Context, senderPubkey string
 
 func (lnbits *LNBitsWrapper) SendPaymentSync(ctx context.Context, senderPubkey, payReq string) (preimage string, err error) {
 	httpclient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 20 * time.Second,
 	}
 	body, _ := sjson.Set("{}", "out", true)
 	body, _ = sjson.Set(body, "bolt11", payReq)
@@ -109,4 +110,30 @@ func (lnbits *LNBitsWrapper) SendPaymentSync(ctx context.Context, senderPubkey, 
 		return
 	}
 	return jsonMap["payment_hash"].(string), nil
+}
+
+func (lnbits *LNBitsWrapper) GetInfo(ctx context.Context, senderPubkey string) (info *NodeInfo, err error) {
+	return nil, err
+
+}
+
+func (lnbits *LNBitsWrapper) ListTransactions(ctx context.Context, senderPubkey string, from, until, limit, offset uint64, unpaid bool, invoiceType string) (transactions []Nip47Transaction, err error) {
+
+	return nil, nil
+}
+
+func (lnbits *LNBitsWrapper) LookupInvoice(ctx context.Context, senderPubkey string, paymentHash string) (transaction *Nip47Transaction, err error) {
+	paymentHashBytes, err := hex.DecodeString(paymentHash)
+	print(paymentHashBytes)
+	return nil, nil
+}
+
+func (lnbits *LNBitsWrapper) MakeInvoice(ctx context.Context, senderPubkey string, amount int64, description string, descriptionHash string, expiry int64) (transaction *Nip47Transaction, err error) {
+
+	return nil, nil
+}
+
+func (lnbits *LNBitsWrapper) SendKeysend(ctx context.Context, senderPubkey string, amount int64, destination, preimage string, custom_records []TLVRecord) (respPreimage string, err error) {
+
+	return "", nil
 }

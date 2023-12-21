@@ -27,7 +27,6 @@
           </td>
         </tr>
         <tr>
-          <td class="text-gray-400 text-sm">Session Backend: {{.App.BackendOptions}}</td>
           <td class="align-top font-medium dark:text-white">Expires at</td>
           <td class="text-gray-600 dark:text-neutral-400">        
             {{ if not .ExpiresAt.IsZero}}
@@ -36,6 +35,10 @@
               never
             {{end}}
           </td>
+        </tr>
+        <tr>
+          <td class="align-top font-medium dark:text-white">Backend</td>
+          <td class="text-gray-600 dark:text-neutral-400">{{.App.BackendOptions.Backend}}</td>
         </tr>
       </table>
     </div>

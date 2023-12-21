@@ -250,6 +250,7 @@ func (svc *Service) AppsNewHandler(c echo.Context) error {
 	maxAmount := c.QueryParam("max_amount")
 	budgetRenewal := strings.ToLower(c.QueryParam("budget_renewal"))
 	expiresAt := c.QueryParam("expires_at") // YYYY-MM-DD or MM/DD/YYYY or timestamp in seconds
+
 	if expiresAtTimestamp, err := strconv.Atoi(expiresAt); err == nil {
 		expiresAt = time.Unix(int64(expiresAtTimestamp), 0).Format(time.RFC3339)
 	}
@@ -351,9 +352,17 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 	backendOptions.Backend = "alby"
 
 	if svc.cfg.LNBackendType != AlbyBackendType {
+		print(c.FormValue("backend" + "\n\n"))
+		print(c.FormValue("lnbitsadminkey" + "\n\n"))
+
+		svc.Logger.WithFields(logrus.Fields{
+			"backend":        c.FormValue("Backend"),
+			"lnbitsadminkey": c.FormValue("lnbitsadminkey"),
+		})
+
 		backendOptions.Backend = "lnd"
-		if c.FormValue("backend") != "" {
-			backendOptions.Backend = c.FormValue("backend")
+		if c.FormValue("Backend") != "" {
+			backendOptions.Backend = c.FormValue("Backend")
 		}
 		if backendOptions.Backend == "lnbits" {
 			if c.FormValue("lnbitsadminkey") != "" {
@@ -455,7 +464,7 @@ func (svc *Service) AppsCreateHandler(c echo.Context) error {
 		"PairingSecret": pairingSecretKey,
 		"Pubkey":        pairingPublicKey,
 		"Name":          name,
-		"Backend":       svc.cfg.LNBackendType,
+		"Backend":       app.BackendOptions.Backend,
 	})
 }
 
