@@ -19,18 +19,18 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 		svc.lnClient = setClientLNBits(app, svc)
 	}
 	nostrEvent := NostrEvent{App: app, NostrId: event.ID, Content: event.Content, State: "received"}
-	insertNostrEventResult := svc.db.Create(&nostrEvent)
-	if insertNostrEventResult.Error != nil {
+	err = svc.db.Create(&nostrEvent).Error
+	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
 			"eventId":   event.ID,
 			"eventKind": event.Kind,
 			"appId":     app.ID,
-		}).Errorf("Failed to save nostr event: %v", insertNostrEventResult.Error)
-		return nil, insertNostrEventResult.Error
+		}).Errorf("Failed to save nostr event: %v", err)
+		return nil, err
 	}
 
 	// TODO: move to a shared function
-	hasPermission, code, message := svc.hasPermission(&app, event, request.Method, nil)
+	hasPermission, code, message := svc.hasPermission(&app, event, request.Method, 0)
 
 	if !hasPermission {
 		svc.Logger.WithFields(logrus.Fields{
@@ -39,10 +39,12 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 			"appId":     app.ID,
 		}).Errorf("App does not have permission: %s %s", code, message)
 
-		return svc.createResponse(event, Nip47Response{Error: &Nip47Error{
-			Code:    code,
-			Message: message,
-		}}, ss)
+		return svc.createResponse(event, Nip47Response{
+			ResultType: NIP_47_MAKE_INVOICE_METHOD,
+			Error: &Nip47Error{
+				Code:    code,
+				Message: message,
+			}}, ss)
 	}
 
 	// TODO: move to a shared generic function
@@ -57,6 +59,22 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 		return nil, err
 	}
 
+	if makeInvoiceParams.Description != "" && makeInvoiceParams.DescriptionHash != "" {
+		svc.Logger.WithFields(logrus.Fields{
+			"eventId":   event.ID,
+			"eventKind": event.Kind,
+			"appId":     app.ID,
+		}).Errorf("Only one of description, description_hash can be provided")
+
+		return svc.createResponse(event, Nip47Response{
+			ResultType: NIP_47_MAKE_INVOICE_METHOD,
+			Error: &Nip47Error{
+				Code:    NIP_47_OTHER,
+				Message: "Only one of description, description_hash can be provided",
+			},
+		}, ss)
+	}
+
 	svc.Logger.WithFields(logrus.Fields{
 		"eventId":         event.ID,
 		"eventKind":       event.Kind,
@@ -67,7 +85,7 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 		"expiry":          makeInvoiceParams.Expiry,
 	}).Info("Making invoice")
 
-	invoice, paymentHash, err := svc.lnClient.MakeInvoice(ctx, event.PubKey, makeInvoiceParams.Amount, makeInvoiceParams.Description, makeInvoiceParams.DescriptionHash, makeInvoiceParams.Expiry)
+	transaction, err := svc.lnClient.MakeInvoice(ctx, event.PubKey, makeInvoiceParams.Amount, makeInvoiceParams.Description, makeInvoiceParams.DescriptionHash, makeInvoiceParams.Expiry)
 	if err != nil {
 		svc.Logger.WithFields(logrus.Fields{
 			"eventId":         event.ID,
@@ -78,9 +96,10 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 			"descriptionHash": makeInvoiceParams.DescriptionHash,
 			"expiry":          makeInvoiceParams.Expiry,
 		}).Infof("Failed to make invoice: %v", err)
-		nostrEvent.State = "error"
+		nostrEvent.State = NOSTR_EVENT_STATE_HANDLER_ERROR
 		svc.db.Save(&nostrEvent)
 		return svc.createResponse(event, Nip47Response{
+			ResultType: NIP_47_MAKE_INVOICE_METHOD,
 			Error: &Nip47Error{
 				Code:    NIP_47_ERROR_INTERNAL,
 				Message: fmt.Sprintf("Something went wrong while making invoice: %s", err.Error()),
@@ -89,14 +108,15 @@ func (svc *Service) HandleMakeInvoiceEvent(ctx context.Context, request *Nip47Re
 	}
 
 	responsePayload := &Nip47MakeInvoiceResponse{
-		Invoice:     invoice,
-		PaymentHash: paymentHash,
+		Nip47Transaction: *transaction,
 	}
-	svc.lnClient = Client
-	nostrEvent.State = "executed"
+
+	nostrEvent.State = NOSTR_EVENT_STATE_HANDLER_EXECUTED
+  svc.lnClient = Client
 	svc.db.Save(&nostrEvent)
 	return svc.createResponse(event, Nip47Response{
-		ResultType: NIP_47_GET_BALANCE_METHOD,
+		ResultType: NIP_47_MAKE_INVOICE_METHOD,
+
 		Result:     responsePayload,
 	},
 		ss)

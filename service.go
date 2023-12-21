@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip04"
-	decodepay "github.com/nbd-wtf/ln-decodepay"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -23,10 +23,14 @@ type Service struct {
 	Logger      *logrus.Logger
 }
 
-var supportedMethods = map[string]bool{
-	NIP_47_PAY_INVOICE_METHOD: true,
-	NIP_47_GET_BALANCE_METHOD: true,
-}
+/*var supportedMethods = map[string]bool{
+	NIP_47_PAY_INVOICE_METHOD:       true,
+	NIP_47_GET_BALANCE_METHOD:       true,
+	NIP_47_GET_INFO_METHOD:          true,
+	NIP_47_MAKE_INVOICE_METHOD:      true,
+	NIP_47_LOOKUP_INVOICE_METHOD:    true,
+	NIP_47_LIST_TRANSACTIONS_METHOD: true,
+}*/
 
 func (svc *Service) GetUser(c echo.Context) (user *User, err error) {
 	sess, _ := session.Get(CookieName, c)
@@ -51,35 +55,52 @@ func (svc *Service) GetUser(c echo.Context) (user *User, err error) {
 
 func (svc *Service) StartSubscription(ctx context.Context, sub *nostr.Subscription) error {
 	for {
+		if sub.Relay.ConnectionError != nil {
+			return sub.Relay.ConnectionError
+		}
 		select {
-		case notice := <-sub.Relay.Notices:
-			svc.Logger.Infof("Received a notice %s", notice)
-		case conErr := <-sub.Relay.ConnectionError:
-			return conErr
 		case <-ctx.Done():
 			svc.Logger.Info("Exiting subscription.")
 			return nil
 		case <-sub.EndOfStoredEvents:
-			svc.Logger.Info("Received EOS")
+			if !svc.ReceivedEOS {
+				svc.Logger.Info("Received EOS")
+			}
 			svc.ReceivedEOS = true
 		case event := <-sub.Events:
 			go func() {
 				resp, err := svc.HandleEvent(ctx, event)
 				if err != nil {
-					svc.Logger.Error(err)
+					svc.Logger.WithFields(logrus.Fields{
+						"eventId":   event.ID,
+						"eventKind": event.Kind,
+					}).Errorf("Failed to process event: %v", err)
 				}
 				if resp != nil {
-					status := sub.Relay.Publish(ctx, *resp)
+					status, err := sub.Relay.Publish(ctx, *resp)
+					if err != nil {
+						svc.Logger.WithFields(logrus.Fields{
+							"eventId":      event.ID,
+							"status":       status,
+							"replyEventId": resp.ID,
+						}).Errorf("Failed to publish reply: %v", err)
+						return
+					}
+
 					nostrEvent := NostrEvent{}
 					result := svc.db.Where("nostr_id = ?", event.ID).First(&nostrEvent)
 					if result.Error != nil {
-						svc.Logger.Error(result.Error)
+						svc.Logger.WithFields(logrus.Fields{
+							"eventId":      event.ID,
+							"status":       status,
+							"replyEventId": resp.ID,
+						}).Error(result.Error)
 						return
 					}
 					nostrEvent.ReplyId = resp.ID
-					// https://github.com/nbd-wtf/go-nostr/blob/master/relay.go#L321
+
 					if status == nostr.PublishStatusSucceeded {
-						nostrEvent.State = "replied"
+						nostrEvent.State = NOSTR_EVENT_STATE_PUBLISH_CONFIRMED
 						nostrEvent.RepliedAt = time.Now()
 						svc.db.Save(&nostrEvent)
 						svc.Logger.WithFields(logrus.Fields{
@@ -90,7 +111,7 @@ func (svc *Service) StartSubscription(ctx context.Context, sub *nostr.Subscripti
 							"appId":        nostrEvent.AppId,
 						}).Info("Published reply")
 					} else if status == nostr.PublishStatusFailed {
-						nostrEvent.State = "failed"
+						nostrEvent.State = NOSTR_EVENT_STATE_PUBLISH_FAILED
 						svc.db.Save(&nostrEvent)
 						svc.Logger.WithFields(logrus.Fields{
 							"nostrEventId": nostrEvent.ID,
@@ -100,7 +121,7 @@ func (svc *Service) StartSubscription(ctx context.Context, sub *nostr.Subscripti
 							"appId":        nostrEvent.AppId,
 						}).Info("Failed to publish reply")
 					} else {
-						nostrEvent.State = "sent"
+						nostrEvent.State = NOSTR_EVENT_STATE_PUBLISH_UNCONFIRMED
 						svc.db.Save(&nostrEvent)
 						svc.Logger.WithFields(logrus.Fields{
 							"nostrEventId": nostrEvent.ID,
@@ -182,15 +203,25 @@ func (svc *Service) HandleEvent(ctx context.Context, event *nostr.Event) (result
 	switch nip47Request.Method {
 	case NIP_47_PAY_INVOICE_METHOD:
 		return svc.HandlePayInvoiceEvent(ctx, nip47Request, event, app, ss)
+	case NIP_47_PAY_KEYSEND_METHOD:
+		return svc.HandlePayKeysendEvent(ctx, nip47Request, event, app, ss)
 	case NIP_47_GET_BALANCE_METHOD:
 		return svc.HandleGetBalanceEvent(ctx, nip47Request, event, app, ss)
 	case NIP_47_MAKE_INVOICE_METHOD:
 		return svc.HandleMakeInvoiceEvent(ctx, nip47Request, event, app, ss)
+	case NIP_47_LOOKUP_INVOICE_METHOD:
+		return svc.HandleLookupInvoiceEvent(ctx, nip47Request, event, app, ss)
+	case NIP_47_LIST_TRANSACTIONS_METHOD:
+		return svc.HandleListTransactionsEvent(ctx, nip47Request, event, app, ss)
+	case NIP_47_GET_INFO_METHOD:
+		return svc.HandleGetInfoEvent(ctx, nip47Request, event, app, ss)
 	default:
-		return svc.createResponse(event, Nip47Response{Error: &Nip47Error{
-			Code:    NIP_47_ERROR_NOT_IMPLEMENTED,
-			Message: fmt.Sprintf("Unknown method: %s", nip47Request.Method),
-		}}, ss)
+		return svc.createResponse(event, Nip47Response{
+			ResultType: nip47Request.Method,
+			Error: &Nip47Error{
+				Code:    NIP_47_ERROR_NOT_IMPLEMENTED,
+				Message: fmt.Sprintf("Unknown method: %s", nip47Request.Method),
+			}}, ss)
 	}
 }
 
@@ -205,7 +236,7 @@ func (svc *Service) createResponse(initialEvent *nostr.Event, content interface{
 	}
 	resp := &nostr.Event{
 		PubKey:    svc.cfg.IdentityPubkey,
-		CreatedAt: time.Now(),
+		CreatedAt: nostr.Now(),
 		Kind:      NIP_47_RESPONSE_KIND,
 		Tags:      nostr.Tags{[]string{"p", initialEvent.PubKey}, []string{"e", initialEvent.ID}},
 		Content:   msg,
@@ -217,7 +248,23 @@ func (svc *Service) createResponse(initialEvent *nostr.Event, content interface{
 	return resp, nil
 }
 
-func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod string, paymentRequest *decodepay.Bolt11) (result bool, code string, message string) {
+func (svc *Service) GetMethods(app *App) []string {
+	appPermissions := []AppPermission{}
+	findPermissionsResult := svc.db.Find(&appPermissions, &AppPermission{
+		AppId: app.ID,
+	})
+	if findPermissionsResult.RowsAffected == 0 {
+		// No permissions created for this app. It can do anything
+		return strings.Split(NIP_47_CAPABILITIES, ",")
+	}
+	requestMethods := make([]string, 0, len(appPermissions))
+	for _, appPermission := range appPermissions {
+		requestMethods = append(requestMethods, appPermission.RequestMethod)
+	}
+	return requestMethods
+}
+
+func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod string, amount int64) (result bool, code string, message string) {
 	// find all permissions for the app
 	appPermissions := []AppPermission{}
 	findPermissionsResult := svc.db.Find(&appPermissions, &AppPermission{
@@ -225,7 +272,12 @@ func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod st
 	})
 	if findPermissionsResult.RowsAffected == 0 {
 		// No permissions created for this app. It can do anything
-		svc.Logger.Info("No permissions found for app", app.ID)
+		svc.Logger.WithFields(logrus.Fields{
+			"eventId":       event.ID,
+			"requestMethod": requestMethod,
+			"appId":         app.ID,
+			"pubkey":        app.NostrPubkey,
+		}).Info("No permissions found for app")
 		return true, "", ""
 	}
 
@@ -237,9 +289,15 @@ func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod st
 		// No permission for this request method
 		return false, NIP_47_ERROR_RESTRICTED, fmt.Sprintf("This app does not have permission to request %s", requestMethod)
 	}
-	ExpiresAt := appPermission.ExpiresAt
-	if !ExpiresAt.IsZero() && ExpiresAt.Before(time.Now()) {
-		svc.Logger.Info("This pubkey is expired")
+	expiresAt := appPermission.ExpiresAt
+	if !expiresAt.IsZero() && expiresAt.Before(time.Now()) {
+		svc.Logger.WithFields(logrus.Fields{
+			"eventId":       event.ID,
+			"requestMethod": requestMethod,
+			"expiresAt":     expiresAt.Unix(),
+			"appId":         app.ID,
+			"pubkey":        app.NostrPubkey,
+		}).Info("This pubkey is expired")
 		return false, NIP_47_ERROR_EXPIRED, "This app has expired"
 	}
 
@@ -248,7 +306,7 @@ func (svc *Service) hasPermission(app *App, event *nostr.Event, requestMethod st
 		if maxAmount != 0 {
 			budgetUsage := svc.GetBudgetUsage(&appPermission)
 
-			if budgetUsage+paymentRequest.MSatoshi/1000 > int64(maxAmount) {
+			if budgetUsage+amount/1000 > int64(maxAmount) {
 				return false, NIP_47_ERROR_QUOTA_EXCEEDED, "Insufficient budget remaining to make payment"
 			}
 		}
@@ -268,15 +326,15 @@ func (svc *Service) PublishNip47Info(ctx context.Context, relay *nostr.Relay) er
 	ev := &nostr.Event{}
 	ev.Kind = NIP_47_INFO_EVENT_KIND
 	ev.Content = NIP_47_CAPABILITIES
-	ev.CreatedAt = time.Now()
+	ev.CreatedAt = nostr.Now()
 	ev.PubKey = svc.cfg.IdentityPubkey
 	err := ev.Sign(svc.cfg.NostrSecretKey)
 	if err != nil {
 		return err
 	}
-	status := relay.Publish(ctx, *ev)
-	if status != nostr.PublishStatusSucceeded {
-		return fmt.Errorf("Nostr publish not succesful: %s", status)
+	status, err := relay.Publish(ctx, *ev)
+	if err != nil || status != nostr.PublishStatusSucceeded {
+		return fmt.Errorf("Nostr publish not successful: %s error: %s", status, err)
 	}
 	return nil
 }
