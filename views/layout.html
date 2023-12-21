@@ -7,79 +7,76 @@
     <title>Alby - Nostr Wallet Connect</title>
     <link href="/public/css/application.css?v202303281" rel="stylesheet" />
     <link href="/public/css/fonts.css?v202303281" rel="stylesheet" />
-    <link rel="icon" href="/public/images/nwc-logo.svg">
+    <link rel="icon" href="/public/images/nwc-logo.svg" />
   </head>
 
   <body class="bg-gray-50 dark:bg-surface-00dp">
-    <nav
-      class="bg-white border-b border-gray-200 mb-4 dark:bg-surface-01dp dark:border-white/10"
-      data-controller="navbar"
+    <div
+      class="bg-white border-b border-gray-200 dark:bg-surface-01dp dark:border-neutral-700 mb-6"
     >
-      <div class="container mx-auto">
-        <div
-          class="w-full py-2 lg:w-8/12 mx-auto flex flex-wrap justify-between items-center"
-          style="height: 56px"
-        >
-          <a href="/" class="font-headline text-[20px] dark:text-white">
-            <img
-              alt=""
-              class="inline w-8 ml-1 md:ml-0"
-              width="128"
-              height="120"
-              src="/public/images/nwc-logo.svg"
-            />
-            Nostr Wallet Connect
-          </a>
-          <div class="flex md:flex-1 items-center">
-            <ul
-              class="hidden md:flex flex-wrap pl-10 pr-10 {{if .User}}mx-auto{{else}}w-full justify-end{{end}}"
-            >
-              <li class="mx-2 flex">
-                <a
-                  class="text-gray-400 pl-5 py-2 font-medium hover:text-gray-600 dark:hover:text-gray-300 transition"
-                  rel="nofollow"
-                  href="/apps"
-                >
-                  Connections
-                </a>
-              </li>
-              <li class="mx-2 flex">
-                <a
-                  class="text-gray-400 pl-5 py-2 font-medium"
-                  rel="nofollow"
-                  href="/about"
-                >
-                  About
-                </a>
-              </li>
-            </ul>
-            {{if .User}}
-            <div class="pr-4 sm:pr-0">
-              <a
-                class="text-gray-400 pl-5 py-2 font-medium"
-                rel="nofollow"
-                href="/logout"
+      <nav class="container max-w-screen-lg mx-auto px-4 lg:px-0 py-3">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-12">
+            <a href="/" class="font-headline text-[20px] dark:text-white">
+              <img
+                alt="NWC Logo"
+                class="w-8 inline"
+                width="128"
+                height="120"
+                src="/public/images/nwc-logo.svg"
+              />
+              <span class="dark:text-white text-lg font-semibold hidden sm:inline"
+                >Nostr Wallet Connect</span
               >
-                Logout
+            </a>
+
+            <div class="hidden md:flex space-x-4">
+              <a
+                class="text-gray-400 font-medium hover:text-gray-600 dark:hover:text-gray-300 transition"
+                href="/apps"
+              >
+                Connections
+              </a>
+              <a class="text-gray-400 pl-5 font-medium" href="/about">
+                About
               </a>
             </div>
-            {{end}}
           </div>
+          {{if .User}}
+          <div class="flex items-center relative">
+            <p class="text-gray-400 dark:text-gray-400 text-xs font-medium sm:text-base cursor-pointer select-none " id="dropdown-menu">
+              {{.User.Email}}
+              <img
+                id="caret"
+                class="inline cursor-pointer w-4 ml-2"
+                src="/public/images/caret.svg"
+              />
+            </p>
+              <div class="font-medium flex flex-col hidden px-4 w-40 logout absolute right mt-25 justify-left cursor-pointer rounded-lg border border-gray-200 dark:border-gray-200 text-center bg-white dark:bg-surface-01dp shadow" id="dropdown">
+                <a class="md:hidden flex items-center justify-left  py-2 text-gray-400 dark:text-gray-400" href="/about">
+                  <img class="inline cursor-pointer w-4 mr-3" src="/public/images/about.svg" alt="about-svg"><p class="font-normal">About</p>
+                </a>
+                <a class="flex items-center justify-left py-2 text-red-500" href="/logout">
+                  <img class="inline cursor-pointer w-4 mr-3" src="/public/images/logout.svg" alt="logout-svg"><p class="font-normal">Logout</p>
+                </a>
+              </div>
+          </div>
+          {{end}}
         </div>
-      </div>
-    </nav>
-    <main class="container mx-auto px-1 md:px-0 pb-4 flex flex-col">
+      </nav>
+    </div>
+    <main class="container max-w-screen-lg mx-auto px-4 lg:px-0 flex flex-col">
       {{template "body" .}}
     </main>
-    <footer class="mb-8 text-center">
-      <span class="text-gray-500 dark:text-neutral-300">powered by</span>
-      <a href="https://getalby.com">
+    <footer class="mt-20 mb-4 text-center">
+      <span class="text-gray-500 dark:text-neutral-300 text-xs"
+        >Made with 💜 by</span
+      >
+      <a href="https://getalby.com?utm_source=nwc" rel="noreferrer noopener">
         <img
           id="alby-logo"
           src="/public/images/alby-logo-with-text.svg"
-          width="1094"
-          height="525"
-          class="w-[65px] inline"
+          class="w-16 inline"
         />
       </a>
     </footer>
@@ -97,21 +94,32 @@
       link.classList.add("text-gray-900", "dark:text-gray-100");
     }
     function updateLogo() {
-      const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const logoImages = document.querySelectorAll('#alby-logo');
+      const isDarkMode = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      const logoImages = document.querySelectorAll("#alby-logo");
 
       if (isDarkMode) {
-        logoImages.forEach(logoImage => {
-          logoImage.src = '/public/images/alby-logo-with-text-dark.svg';
+        logoImages.forEach((logoImage) => {
+          logoImage.src = "/public/images/alby-logo-with-text-dark.svg";
         });
       } else {
-        logoImages.forEach(logoImage => {
-          logoImage.src = '/public/images/alby-logo-with-text.svg';
+        logoImages.forEach((logoImage) => {
+          logoImage.src = "/public/images/alby-logo-with-text.svg";
         });
       }
     }
-    window.addEventListener('load', updateLogo);
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateLogo);
+    const dropdownMenu = document.getElementById("dropdown-menu");
+    const caret = document.getElementById("caret");
+    dropdownMenu.addEventListener('click',()=>{
+      const dropdown = document.getElementById("dropdown");
+      dropdown.classList.toggle("hidden");
+      caret.classList.toggle("rotate-180");
+    });
+    window.addEventListener("load", updateLogo);
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", updateLogo);
   </script>
 </html>
 {{end}}

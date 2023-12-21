@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	echologrus "github.com/davrux/echo-logrus/v4"
+	"github.com/getAlby/nostr-wallet-connect/migrations"
 	"github.com/glebarez/sqlite"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -21,6 +23,10 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"github.com/jackc/pgx/v5/stdlib"
+	sqltrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/database/sql"
+	gormtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorm.io/gorm.v1"
 )
 
 func main() {
@@ -34,12 +40,28 @@ func main() {
 	}
 
 	var db *gorm.DB
+	var sqlDb *sql.DB
 	if strings.HasPrefix(cfg.DatabaseUri, "postgres://") || strings.HasPrefix(cfg.DatabaseUri, "postgresql://") || strings.HasPrefix(cfg.DatabaseUri, "unix://") {
-		db, err = gorm.Open(postgres.Open(cfg.DatabaseUri), &gorm.Config{})
-		if err != nil {
-			log.Fatalf("Failed to open DB %v", err)
+		if os.Getenv("DATADOG_AGENT_URL") != "" {
+			sqltrace.Register("pgx", &stdlib.Driver{}, sqltrace.WithServiceName("nostr-wallet-connect"))
+			sqlDb, err = sqltrace.Open("pgx", cfg.DatabaseUri)
+			if err != nil {
+				log.Fatalf("Failed to open DB %v", err)
+			}
+			db, err = gormtrace.Open(postgres.New(postgres.Config{Conn: sqlDb}), &gorm.Config{})
+			if err != nil {
+				log.Fatalf("Failed to open DB %v", err)
+			}
+		} else {
+			db, err = gorm.Open(postgres.Open(cfg.DatabaseUri), &gorm.Config{})
+			if err != nil {
+				log.Fatalf("Failed to open DB %v", err)
+			}
+			sqlDb, err = db.DB()
+			if err != nil {
+				log.Fatalf("Failed to set DB config: %v", err)
+			}
 		}
-
 	} else {
 		db, err = gorm.Open(sqlite.Open(cfg.DatabaseUri), &gorm.Config{})
 		if err != nil {
@@ -49,20 +71,20 @@ func main() {
 		cfg.DatabaseMaxConns = 1
 		// Enable foreign keys for sqlite
 		db.Exec("PRAGMA foreign_keys=ON;")
-	}
-	sqlDb, err := db.DB()
-	if err != nil {
-		log.Fatalf("Failed set DB config: %v", err)
+		sqlDb, err = db.DB()
+		if err != nil {
+			log.Fatalf("Failed to set DB config: %v", err)
+		}
 	}
 	sqlDb.SetMaxOpenConns(cfg.DatabaseMaxConns)
 	sqlDb.SetMaxIdleConns(cfg.DatabaseMaxIdleConns)
 	sqlDb.SetConnMaxLifetime(time.Duration(cfg.DatabaseConnMaxLifetime) * time.Second)
 
-	// Migrate the schema
-	err = db.AutoMigrate(&User{}, &App{}, &AppPermission{}, &NostrEvent{}, &Payment{}, &Identity{})
+	err = migrations.Migrate(db)
 	if err != nil {
-		log.Fatalf("Failed migrate DB %v", err)
+		log.Fatalf("Migration failed: %v", err)
 	}
+	log.Println("Any pending migrations ran successfully")
 
 	if cfg.NostrSecretKey == "" {
 		if cfg.LNBackendType == AlbyBackendType {
@@ -152,7 +174,8 @@ func main() {
 
 	//connect to the relay
 	svc.Logger.Infof("Connecting to the relay: %s", cfg.Relay)
-	relay, err := nostr.RelayConnect(ctx, cfg.Relay)
+
+	relay, err := nostr.RelayConnect(ctx, cfg.Relay, nostr.WithNoticeHandler(svc.noticeHandler))
 	if err != nil {
 		svc.Logger.Fatal(err)
 	}
@@ -167,11 +190,14 @@ func main() {
 	//TODO: we can start this loop for multiple relays
 	for {
 		svc.Logger.Info("Subscribing to events")
-		sub := relay.Subscribe(ctx, svc.createFilters())
+		sub, err := relay.Subscribe(ctx, svc.createFilters())
+		if err != nil {
+			svc.Logger.Fatal(err)
+		}
 		err = svc.StartSubscription(ctx, sub)
 		if err != nil {
 			//err being non-nil means that we have an error on the websocket error channel. In this case we just try to reconnect.
-			svc.Logger.WithError(err).Error("Got an error from the relay. Reconnecting...")
+			svc.Logger.WithError(err).Error("Got an error from the relay while listening to subscription. Reconnecting...")
 			relay, err = nostr.RelayConnect(ctx, cfg.Relay)
 			if err != nil {
 				svc.Logger.Fatal(err)
@@ -197,4 +223,8 @@ func (svc *Service) createFilters() nostr.Filters {
 		filter.Authors = []string{svc.cfg.ClientPubkey}
 	}
 	return []nostr.Filter{filter}
+}
+
+func (svc *Service) noticeHandler(notice string) {
+	svc.Logger.Infof("Received a notice %s", notice)
 }
