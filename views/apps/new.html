@@ -133,7 +133,7 @@
       </p>
     {{end}}
 
-
+<div>
     <div id="backend-toggle" class="cursor-pointer text-sm font-medium text-purple-700  dark:text-purple-500">
       + Change Backend
     </div>
@@ -144,17 +144,7 @@
         <div kind="lnbits" class="cursor-pointer rounded border-2 border-gray-200 dark:border-gray-400 text-center py-4">LNBITS</div>
     </div>
 
-  
-
-    
-    {{ if .Pubkey }}
-      <p class="text-orange-700 bg-orange-50 p-3 mb-6">
-        ⚠️ Only connect with apps you trust!
-      </p>
-    {{ end }}
-
-    <div class="mb-4">
-      <div id="backendoptions">
+    <div id="backendoptions">
           <div id="lnbitsoptions" style="display: none">
                 <label for="lnbitsadminkey" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Admin key</label>
                 <input type="lnbitsadminkey" name="lnbitsadminkey" id="lnbitsadminkey" aria-describedby="helper-text-explanation"
@@ -174,24 +164,32 @@
                 </p>
                 <br>
           </div>
-    </div>
-  
-    <div class="flex flex-col sm:flex-row sm:justify-center">
-      {{ if not .Pubkey }}
-      <a
-        href="/apps"
-        class="inline-flex p-4 underline cursor-pointer duration-150 items-center justify-center text-gray-700 dark:text-neutral-300 w-full sm:w-[250px] order-last sm:order-first"
-      >
-        Cancel
-      </a>
-    {{ end }}
-    <button
-      type="submit"
-      class="inline-flex w-full sm:w-[250px] bg-purple-700 cursor-pointer dark:text-neutral-200 duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus:outline-none font-medium hover:bg-purple-900 items-center justify-center px-5 py-3 rounded-md shadow text-white transition"
-    >
-    {{ if .Pubkey }} Connect {{ else }} Next {{ end }}
-    </button>
   </div>
+
+</div> 
+    {{ if .Pubkey }}
+      <p class="text-orange-700 bg-orange-50 p-3 mb-6">
+        ⚠️ Only connect with apps you trust!
+      </p>
+    {{ end }}
+
+
+  <div class="flex flex-col sm:flex-row sm:justify-center">
+    {{ if not .Pubkey }}
+    <a
+      href="/apps"
+      class="inline-flex p-4 underline cursor-pointer duration-150 items-center justify-center text-gray-700 dark:text-neutral-300 w-full sm:w-[250px] order-last sm:order-first"
+    >
+      Cancel
+    </a>
+  {{ end }}
+  <button
+    type="submit"
+    class="inline-flex w-full sm:w-[250px] bg-purple-700 cursor-pointer dark:text-neutral-200 duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus:outline-none font-medium hover:bg-purple-900 items-center justify-center px-5 py-3 rounded-md shadow text-white transition"
+  >
+  {{ if .Pubkey }} Connect {{ else }} Next {{ end }}
+  </button>
+</div>
 </form>
 
 <script type="text/javascript">
