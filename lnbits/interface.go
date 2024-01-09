@@ -1,4 +1,4 @@
-package lnd
+package lnbits
 
 import (
 	"context"
