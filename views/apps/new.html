@@ -8,12 +8,16 @@
 <div class="backend">{{.Backend }}</div>
 <script>
     function showBackendChoice(){
-      console.log(document.getElementById('backend')[0].innerHTML)
-      if  (document.getElementById('backend')[0].innerHTML != "ALBY"){
-        document.getElementById('backendoptions').style.display = "block";
-     } else{
-         document.getElementById('backendoptions').style.display = "none";
+      if (document.getElementById('backend')[0] != null){
+        console.log(document.getElementById('backend')[0].innerHTML)
+          if  (document.getElementById('backend')[0].innerHTML != "ALBY"){
+            document.getElementById('backendoptions').style.display = "block";
+        } else{
+            document.getElementById('backendoptions').style.display = "none";
+          }
+
       }
+    
     }
 </script>
 <div
@@ -139,9 +143,10 @@
     <div id="backend-header" class="hidden text-gray-800 dark:text-neutral-200">
       <p class="text-lg font-medium mb-2">Connection Backend</p>
       <div id="backend-list" class="grid grid-cols-4 gap-2 text-xs">
-        <div kind="lnd" class="cursor-pointer rounded border-2 border-gray-200 dark:border-gray-400 text-center py-4">LND</div>
+        <div kind="lnd" class="cursor-pointer rounded border-2 border-gray-200 dark:border-gray-400 text-center py-4 border-purple-700 dark:border-purple-300 text-purple-700 dark:text-white bg-purple-100 dark:bg-purple-900">LND</div>
         <div kind="lnbits" class="cursor-pointer rounded border-2 border-gray-200 dark:border-gray-400 text-center py-4">LNBITS</div>
     </div>
+  
 
   
 
@@ -174,7 +179,8 @@
                 <br>
           </div>
     </div>
-  
+  </div>
+</div>
     <div class="flex flex-col sm:flex-row sm:justify-center">
       {{ if not .Pubkey }}
       <a
@@ -190,7 +196,8 @@
     >
     {{ if .Pubkey }} Connect {{ else }} Next {{ end }}
     </button>
-  </div>
+    </div>
+ 
 </form>
 
 <script type="text/javascript">
